@@ -3,16 +3,15 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyEventQueryS
 import * as UTIL from "../util";
 import { ISearchCriteria } from "../models/searchCriteria";
 import { TECH_STATUS_CODE } from "../models/techStatusCode";
-const client = new AWS.DynamoDB.DocumentClient();
+const dynamoClient = new AWS.DynamoDB.DocumentClient();
 
 exports.handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     // Get & Set Parameters
     const queryParams = event.queryStringParameters!;
     const criteriaType = queryParams.searchCriteria as ISearchCriteria;
 
-    const query = getCriteriaClient(client, criteriaType, queryParams);
-    if(query === undefined)
-    {
+    const query = getCriteriaClient(dynamoClient, criteriaType, queryParams);
+    if(query === undefined) {
         return {
             statusCode:400,
             body:""
@@ -39,13 +38,13 @@ exports.handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyRe
     return response;
 };
 
-const getCriteriaClient = (client: AWS.DynamoDB.DocumentClient, criteriaType: ISearchCriteria, queryParams:APIGatewayProxyEventQueryStringParameters):AWS.Request<AWS.DynamoDB.DocumentClient.QueryOutput, AWS.AWSError> | undefined => {
-    switch(criteriaType){
+const getCriteriaClient = (client: AWS.DynamoDB.DocumentClient, criteriaType: ISearchCriteria, queryParams: APIGatewayProxyEventQueryStringParameters): AWS.Request<AWS.DynamoDB.DocumentClient.QueryOutput, AWS.AWSError> | undefined => {
+    switch(criteriaType) {
         case ISearchCriteria.VIN:
             return getVinSearch(client, queryParams);
     }
     return undefined;
-}
+};
 
 function getVinSearch(client: AWS.DynamoDB.DocumentClient, queryParams: APIGatewayProxyEventQueryStringParameters): AWS.Request<AWS.DynamoDB.DocumentClient.QueryOutput, AWS.AWSError> | undefined {
     const vinNumber = queryParams.vin;
