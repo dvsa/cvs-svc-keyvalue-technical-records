@@ -1,3 +1,4 @@
+import * as AWS from 'aws-sdk';
 import logger from './logger';
 import _ from 'lodash';
 
@@ -77,3 +78,48 @@ const isValidValue = (a: unknown) => {
     logger.info('flattening techRecord');
     return flattenAttributes(vehicle, record, 'techRecord');
   };
+
+  export const unflatten = (items: AWS.DynamoDB.DocumentClient.ItemList):any => {
+    const vehicle = {'techRecord':[]};
+    for(const item of items)
+    {
+        const record:{[key:string]:any} = {};
+        for (const [key, value] of Object.entries(item)) {
+            if(key.indexOf('_') === -1 && !vehicle[key])
+            {
+                vehicle[key] = value;
+                continue;
+            }
+            nestItem(record, key, value, 0);
+        }
+        vehicle.techRecord.push(record.techRecord);
+    }
+    return vehicle;
+  }
+
+  const nestItem = (record:{[key:string]:any}, key:string, value:any, position:number) => {
+    const idx = key.indexOf('_', position);
+
+    if (idx === -1) {
+        //console.log(`Setting ${key.substr(position)}`);
+        record[key.substr(position)] = value;
+        return;
+    }
+    const realKey = key.substr(position, idx - position);
+    //console.log(`Dealing with ${realKey}`);
+    const isArray = !isNaN(parseInt(key[idx + 1]));
+    //console.log(`key: ${realKey}, isArray: ${isArray}`);
+
+    if(!record[realKey])
+        {
+        if (isArray) {
+            record[realKey] = [];
+        }
+        else {
+            record[realKey] = {};
+        }
+    }
+
+    nestItem(record[realKey], key, value, idx+1);
+    return record;
+};

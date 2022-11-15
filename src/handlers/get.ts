@@ -1,34 +1,8 @@
 import * as AWS from 'aws-sdk';
-import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyEventPathParameters } from "aws-lambda";
-import { string } from '@hapi/joi';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import * as UTIL from '../util'
 const client = new AWS.DynamoDB.DocumentClient();
 
-const nestItem = (record:{[key:string]:any}, key:string, value:any, position:number) => {
-    const idx = key.indexOf('_', position);
-
-    if (idx === -1) {
-        //console.log(`Setting ${key.substr(position)}`);
-        record[key.substr(position)] = value;
-        return;
-    }
-    const realKey = key.substr(position, idx - position);
-    //console.log(`Dealing with ${realKey}`);
-    const isArray = !isNaN(parseInt(key[idx + 1]));
-    //console.log(`key: ${realKey}, isArray: ${isArray}`);
-
-    if(!record[realKey])
-        {
-        if (isArray) {
-            record[realKey] = [];
-        }
-        else {
-            record[realKey] = {};
-        }
-    }
-
-    nestItem(record[realKey], key, value, idx+1);
-    return record;
-};
 exports.handler = async (event: APIGatewayProxyEvent):Promise<APIGatewayProxyResult> => {
     //Get & Set Parameters
     const pathParams = event.pathParameters!
@@ -56,20 +30,7 @@ exports.handler = async (event: APIGatewayProxyEvent):Promise<APIGatewayProxyRes
     }
 
     //console.log(JSON.stringify());
-    const vehicle = {'techRecord':[]};
-    for(const item of result.Items)
-    {
-        const record:{[key:string]:any} = {};
-        for (const [key, value] of Object.entries(item)) {
-            if(key.indexOf('_') === -1 && !vehicle[key])
-            {
-                vehicle[key] = value;
-                continue;
-            }
-            nestItem(record, key, value, 0);
-        }
-        vehicle.techRecord.push(record.techRecord);
-    }
+    const vehicle = UTIL.unflatten(result.Items);
 
     const response = {
         statusCode: 200,
