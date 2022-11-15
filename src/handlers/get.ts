@@ -1,25 +1,25 @@
 import * as AWS from "aws-sdk";
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyEventQueryStringParameters } from "aws-lambda";
 import * as UTIL from "../util";
+import { ISearchCriteria } from "../models/searchCriteria";
+import { TECH_STATUS_CODE } from "../models/techStatusCode";
 const client = new AWS.DynamoDB.DocumentClient();
 
 exports.handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     // Get & Set Parameters
-    const pathParams = event.pathParameters!;
     const queryParams = event.queryStringParameters!;
-    const status = queryParams.status as TECH_STATUS_CODE ?? TECH_STATUS_CODE.PROVISIONAL_OVER_CURRENT;
-    const vehicleId = pathParams.vehicleId;
+    const criteriaType = queryParams.searchCriteria as ISearchCriteria;
 
-    const result = await client.query({
-        TableName: process.env.target_table!,
-        KeyConditionExpression: "systemNumber = :vehicleId",
-        FilterExpression: "CONTAINS(status, :status)",
-        ScanIndexForward: false,
-        ExpressionAttributeValues: {
-            ":vehicleId": vehicleId,
-            ":statusList": status
-        }
-    }).promise();
+    const query = getCriteriaClient(client, criteriaType, queryParams);
+    if(query === undefined)
+    {
+        return {
+            statusCode:400,
+            body:""
+        };
+    }
+
+    const result = await query.promise();
     // console.log('Retrieved from Dynamo');
 
     if (result.Items === undefined || result.Items.length === 0) {
@@ -38,3 +38,29 @@ exports.handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyRe
     };
     return response;
 };
+
+const getCriteriaClient = (client: AWS.DynamoDB.DocumentClient, criteriaType: ISearchCriteria, queryParams:APIGatewayProxyEventQueryStringParameters):AWS.Request<AWS.DynamoDB.DocumentClient.QueryOutput, AWS.AWSError> | undefined => {
+    switch(criteriaType){
+        case ISearchCriteria.VIN:
+            return getVinSearch(client, queryParams);
+    }
+    return undefined;
+}
+
+function getVinSearch(client: AWS.DynamoDB.DocumentClient, queryParams: APIGatewayProxyEventQueryStringParameters): AWS.Request<AWS.DynamoDB.DocumentClient.QueryOutput, AWS.AWSError> | undefined {
+    const vinNumber = queryParams.vin;
+    const status = queryParams.status as TECH_STATUS_CODE ?? TECH_STATUS_CODE.PROVISIONAL_OVER_CURRENT;
+
+    return client.query({
+        TableName: process.env.target_table!,
+        IndexName: process.env.vin_index!,
+        KeyConditionExpression: "vin = :vinNumber",
+        FilterExpression: "CONTAINS(status, :status)",
+        ScanIndexForward: false,
+        ExpressionAttributeValues: {
+            ":vinNumber": vinNumber,
+            ":statusList": status
+        }
+    });
+}
+
