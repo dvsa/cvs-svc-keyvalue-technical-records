@@ -1,6 +1,8 @@
 import * as AWS from 'aws-sdk';
 import logger from './logger';
 import _ from 'lodash';
+import { Vehicle } from './models/techRecordTypes';
+import { any } from '@hapi/joi';
 
 export interface NewKeyStructure {
     [index: string]: string | boolean | number | Array<string>;
@@ -79,8 +81,8 @@ const isValidValue = (a: unknown) => {
     return flattenAttributes(vehicle, record, 'techRecord');
   };
 
-  export const unflatten = (items: AWS.DynamoDB.DocumentClient.ItemList):any => {
-    const vehicle = {'techRecord':[]};
+  export const unflatten = (items: AWS.DynamoDB.DocumentClient.ItemList):Vehicle => {
+    const vehicle:{[key:string]:any} = {};
     for(const item of items)
     {
         const record:{[key:string]:any} = {};
@@ -94,7 +96,7 @@ const isValidValue = (a: unknown) => {
         }
         vehicle.techRecord.push(record.techRecord);
     }
-    return vehicle;
+    return vehicle as Vehicle;
   }
 
   const nestItem = (record:{[key:string]:any}, key:string, value:any, position:number) => {
@@ -102,10 +104,10 @@ const isValidValue = (a: unknown) => {
 
     if (idx === -1) {
         //console.log(`Setting ${key.substr(position)}`);
-        record[key.substr(position)] = value;
+        record[key.substring(position)] = value;
         return;
     }
-    const realKey = key.substr(position, idx - position);
+    const realKey = key.substring(position, idx - position);
     //console.log(`Dealing with ${realKey}`);
     const isArray = !isNaN(parseInt(key[idx + 1]));
     //console.log(`key: ${realKey}, isArray: ${isArray}`);

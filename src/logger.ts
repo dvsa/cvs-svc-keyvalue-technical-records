@@ -1,4 +1,5 @@
 import { createLogger, format, transports } from 'winston';
+import config from './models/config';
 const { printf } = format;
 
 const logFormat = printf((info) => {

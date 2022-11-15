@@ -1,6 +1,6 @@
-import ITechRecord from "./ITechRecord";
+import ITechRecord from "./techRecord";
 
-export default interface ITechRecordWrapper {
+export default interface IVehicle {
     primaryVrm?: string;
     secondaryVrms?: string[];
     vin: string;
