@@ -5,37 +5,40 @@ export interface VehicleIdentifiers {
     vin: string;
     partialVin?: string;
   }
-export interface BaseVehicle extends VehicleIdentifiers {
-    techRecord: TechRecord[];
-  }
-export interface TrailerIdentifer extends BaseVehicle {
+
+export interface TrailerIdentifer extends VehicleIdentifiers {
     trailerId?: string;
   }
 
 
-export interface HeavyGoodsVehicle extends BaseVehicle {
+export interface HeavyGoodsVehicle extends VehicleIdentifiers {
     techRecord: HgvTechRecord[];
   }
 
-export interface LightGoodsVehicle extends BaseVehicle {
+export interface LightGoodsVehicle extends VehicleIdentifiers {
     techRecord: CarLgvTechRecord[];
   }
 
-export interface PublicServiceVehicle extends BaseVehicle {
+export interface PublicServiceVehicle extends VehicleIdentifiers {
     techRecord: PsvTechRecord[];
   }
 
-export interface Car extends BaseVehicle {
+export interface Car extends VehicleIdentifiers {
     techRecord: CarLgvTechRecord[];
   }
-export interface Motorcycle extends BaseVehicle {
+export interface Motorcycle extends VehicleIdentifiers {
     techRecord: MotorcycleTechRecord[];
   }
 export interface Trailer extends TrailerIdentifer {
     techRecord: TrlTechRecord[];
   }
 
+export interface TechRecordVehicle extends VehicleIdentifiers {
+    techRecord: VehicleTechRecord[];
+}
+
 export type Vehicle = HeavyGoodsVehicle | LightGoodsVehicle | PublicServiceVehicle | Car | Motorcycle | Trailer;
+export type VehicleTechRecord = HgvTechRecord | PsvTechRecord | TrlTechRecord | MotorcycleTechRecord | CarLgvTechRecord;
 
 export interface TechRecord {
     recordCompleteness: string;

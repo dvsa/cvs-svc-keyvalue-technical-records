@@ -1,8 +1,7 @@
 import * as AWS from 'aws-sdk';
 import logger from './logger';
 import _ from 'lodash';
-import { HeavyGoodsVehicle, HgvTechRecord, TechRecord, Vehicle } from './models/techRecordTypes';
-import { any } from '@hapi/joi';
+import { TechRecordVehicle, VehicleTechRecord } from './models/techRecordTypes';
 
 export interface NewKeyStructure {
   [index: string]: string | boolean | number | Array<string>;
@@ -81,10 +80,10 @@ export const createTimestampRecord = (newImage: LegacyTechRecord, record: Single
   return flattenAttributes(vehicle, record, 'techRecord');
 };
 
-export const unflatten = (items: AWS.DynamoDB.DocumentClient.ItemList): Vehicle[] => {
-  const vehicles: Vehicle[] = [];
-  let techRecords: TechRecord[] = [];
-  let previousVehicle: Vehicle | undefined = undefined;
+export const unflatten = (items: AWS.DynamoDB.DocumentClient.ItemList): TechRecordVehicle[] => {
+  const vehicles: TechRecordVehicle[] = [];
+  let techRecords: VehicleTechRecord[] = [];
+  let previousVehicle: TechRecordVehicle | undefined = undefined;
 
   for (const item of items) {
     const vehicle: any = {};
@@ -108,8 +107,7 @@ export const unflatten = (items: AWS.DynamoDB.DocumentClient.ItemList): Vehicle[
   }
 
   if (previousVehicle !== undefined) {
-    //TODO: Check this vehicle typing - is it required for GET or is this a validation necessity we should ignore everywhere else?
-    (previousVehicle as HeavyGoodsVehicle).techRecord = techRecords as HgvTechRecord[];
+    previousVehicle.techRecord = techRecords as VehicleTechRecord[];
     vehicles.push(previousVehicle);
   }
 
